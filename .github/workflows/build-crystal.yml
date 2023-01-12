@@ -51,7 +51,7 @@ jobs:
       - name: Build and install bdwgc
         working-directory: ./bdwgc
         run: |
-          make clean
+          [ -f Makefile ] && make clean
           autoreconf -vif
           ./configure --enable-static --disable-shared
           make -j
