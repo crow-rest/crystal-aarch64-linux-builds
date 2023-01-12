@@ -25,6 +25,9 @@ jobs:
       - name: Make sure file exist
         run: |
           touch .crystal-latest-tag
+
+### TODO: If crystal is latest version (And this is not a pull request) then stop here.
+
       - name: Install pkgs
         run: sudo apt update && sudo apt-get install -y libbsd-dev libedit-dev libevent-dev libgmp-dev libgmpxx4ldbl 
           libpcre3-dev libssl-dev libtool libxml2-dev libyaml-dev libz-dev
@@ -62,11 +65,12 @@ jobs:
         run: |
           git fetch
           git checkout $(git describe --tags --abbrev=0)
-      - name: Build and test crystal
+#          echo "$(git describe --tags --abbrev=0)" > ../.crystal-latest-tag
+      - name: Build crystal
         working-directory: ./crystal
         run: |
           make clean
-          make crystal release=1
+          make crystal
 
       - name: Build aarch64-unknown-linux-gnu object file
         working-directory: ./crystal
