@@ -22,7 +22,9 @@ jobs:
         run: echo "CRYSTAL_BUILT_LATEST=$(curl -fsSL https://github.com/crow-rest/crystal-aarch64-linux-builds/releases/download/track/crystal-version)" >> $GITHUB_ENV
       - name: Set Output
         id: set
-        run: echo "should=${{ env.CRYSTAL_LATEST != env.CRYSTAL_BUILT_LATEST }}" >> $GITHUB_OUTPUT
+        run: echo "should=${{ (env.CRYSTAL_LATEST != env.CRYSTAL_BUILT_LATEST) || (github.event_name == 'pull_request') }}" >> $GITHUB_OUTPUT
+      - name: Print
+        run: echo ${{ steps.set.outputs.should }}
 
   build:
     runs-on: ubuntu-latest
