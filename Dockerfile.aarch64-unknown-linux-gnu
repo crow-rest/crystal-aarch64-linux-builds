@@ -1,0 +1,61 @@
+FROM ubuntu:latest as builder
+
+WORKDIR /build
+
+RUN apt update && apt install -y build-essential lsb-release wget software-properties-common gnupg
+
+# LLVM 14 required for Crystal
+RUN wget https://apt.llvm.org/llvm.sh && chmod +x llvm.sh && ./llvm.sh 14
+
+# Apt packages for Crystal
+RUN apt update && apt install -y \
+      automake \
+      git \
+      libbsd-dev \
+      libedit-dev \
+      libevent-dev \
+      libgmp-dev \
+      libgmpxx4ldbl \
+      libpcre3-dev \
+      libssl-dev \
+      libtool \
+      libxml2-dev \
+      libyaml-dev \
+      lld \
+      llvm \
+      llvm-dev\
+      libz-dev
+
+# GC
+RUN git clone https://github.com/ivmai/bdwgc.git
+WORKDIR /build/bdwgc
+RUN git checkout $(git describe --tags --abbrev=0)
+RUN git clone https://github.com/ivmai/libatomic_ops.git
+RUN autoreconf -vif
+RUN ./configure --enable-static --disable-shared
+RUN make -j
+RUN make check
+RUN make install
+WORKDIR /build
+
+# Crystal deps
+RUN git clone https://github.com/crystal-lang/crystal.git
+WORKDIR /build/crystal
+RUN make deps
+
+# Link Crystal
+# This cmd comes from the build job and is slightly modified.
+COPY crystal.o .
+RUN cc crystal.o -o crystal -rdynamic -L/usr/bin/../lib/crystal ./src/llvm/ext/llvm_ext.o `"/usr/bin/llvm-config-14" --libs --system-libs --ldflags 2> /dev/null` -lstdc++ -lpcre -lm -lgc -lpthread -levent -lrt -lpthread -ldl -lffi
+
+# Move to img
+FROM ubuntu:latest
+
+COPY --from=builder /build/crystal/.build/crystal /usr/local/bin/crystal
+
+#TODO: chmod +x ???
+
+WORKDIR /app
+
+#ENTRYPOINT [ "mv", "/crystal", "/artifact/crystal" ]
+ENTRYPOINT [ "crystal" ]
