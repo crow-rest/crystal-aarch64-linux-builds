@@ -1,0 +1,50 @@
+name: Build Crystal (aarch64-unknown-linux-gnu)
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+#  schedule:
+#    - cron: '0 3 * * *'
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/cache@v3
+        with:
+          path: |
+            crystal
+            bdwgc
+#            .crystal-latest-tag
+#            .bdwgc-latest-tag
+          key: ${{ runner.os }}-crystal-info
+#      - name: Make sure files exist
+#        run: |
+#          touch .crystal-latest-tag
+#          touch .bdwgc-latest-tag
+      - name: Install crystal
+        run: curl -fsSL https://crystal-lang.org/install.sh | sudo bash
+      - name: Clone repos
+        run:
+          git clone https://github.com/ivmai/bdwgc.git bdwgc 2> /dev/null
+          https://github.com/crystal-lang/crystal.git crystal 2> /dev/null
+      - name: Make bdwgc latest tag
+        working-directory: ./bdwgc
+        run: |
+          git fetch
+          git checkout $(git describe --tags --abbrev=0)
+      - name: Get bdwgc deps
+        working-directory: ./bdwgc
+        run: git clone https://github.com/ivmai/libatomic_ops.git 2> /dev/null
+      - name: Build and install bdwgc
+        working-directory: ./bdwgc
+        run: |
+          autoreconf -vif
+          ./configure --enable-static --disable-shared
+          make -j
+          make check
+          sudo make install
