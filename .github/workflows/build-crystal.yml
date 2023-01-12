@@ -19,13 +19,12 @@ jobs:
           path: |
             crystal
             bdwgc
-#            .crystal-latest-tag
+            .crystal-latest-tag
 #            .bdwgc-latest-tag
-          key: ${{ runner.os }}-crystal-build
-#      - name: Make sure files exist
-#        run: |
-#          touch .crystal-latest-tag
-#          touch .bdwgc-latest-tag
+          key: ${{ runner.os }}-crystal-build-${{ secrets.REBUILD }}
+      - name: Make sure file exist
+        run: |
+          touch .crystal-latest-tag
       - name: Install pkgs
         run: sudo apt update && sudo apt-get install -y libbsd-dev libedit-dev libevent-dev libgmp-dev libgmpxx4ldbl 
           libpcre3-dev libssl-dev libtool libxml2-dev libyaml-dev libz-dev
@@ -67,8 +66,7 @@ jobs:
         working-directory: ./crystal
         run: |
           make clean
-          make crystal
-          make std_spec compiler_spec
+          make crystal release=1
 
       - name: Build aarch64-unknown-linux-gnu object file
         working-directory: ./crystal
