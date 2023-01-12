@@ -58,7 +58,7 @@ jobs:
         run: git checkout $(git describe --tags --abbrev=0)
       - name: Get bdwgc deps
         working-directory: ./bdwgc
-        run: git clone https://github.com/ivmai/libatomic_ops.git 2> /dev/null
+        run: git -C libatomic_ops pull origin master || git clone https://github.com/ivmai/libatomic_ops.git
       - name: Build and install bdwgc
         working-directory: ./bdwgc
         run: |
@@ -88,8 +88,12 @@ jobs:
           path: crystal/crystal.o
 
   aarch64-unknown-linux-gnu:
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [ aarch64-unknown-linux-gnu ]
     runs-on: ubuntu-latest
-    needs: [build]
+    needs: [ build ]
     steps:
       - uses: actions/checkout@v3
       - name: Read
