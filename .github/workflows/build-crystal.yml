@@ -26,12 +26,20 @@ jobs:
 #        run: |
 #          touch .crystal-latest-tag
 #          touch .bdwgc-latest-tag
+      - name: Install pkgs
+        run: sudo apt update && sudo apt-get install -y libbsd-dev libedit-dev libevent-dev libgmp-dev libgmpxx4ldbl 
+          libpcre3-dev libssl-dev libtool libxml2-dev libyaml-dev libz-dev
+      - name: Install LLVM and Clang
+        uses: KyleMayes/install-llvm-action@v1.6.1
+        with:
+          version: 14
       - name: Install crystal
         run: curl -fsSL https://crystal-lang.org/install.sh | sudo bash
       - name: Clone repos
         run: |
           git clone https://github.com/ivmai/bdwgc.git bdwgc 2> /dev/null
           git clone https://github.com/crystal-lang/crystal.git crystal 2> /dev/null
+
       - name: Make bdwgc latest tag
         working-directory: ./bdwgc
         run: |
@@ -43,8 +51,31 @@ jobs:
       - name: Build and install bdwgc
         working-directory: ./bdwgc
         run: |
+          make clean
           autoreconf -vif
           ./configure --enable-static --disable-shared
           make -j
           make check
           sudo make install
+
+      - name: Make crystal latest tag
+        working-directory: ./crystal
+        run: |
+          git fetch
+          git checkout $(git describe --tags --abbrev=0)
+      - name: Build and test crystal
+        working-directory: ./crystal
+        run: |
+          make clean
+          make crystal
+          make std_spec compiler_spec
+
+      - name: Build aarch64-unknown-linux-gnu
+        working-directory: ./crystal
+        run: ./bin/crystal build src/compiler/crystal.cr --cross-compile --target=aarch64-linux-gnu -D without_openssl -D without_zlib --release
+
+      - name: LS
+        working-directory: ./crystal
+        run: |
+          ls
+          ls build
