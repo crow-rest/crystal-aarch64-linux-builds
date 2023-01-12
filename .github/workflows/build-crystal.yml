@@ -1,4 +1,4 @@
-name: Build Crystal (aarch64-unknown-linux-gnu)
+name: Build Crystal for aarch64 targets
 
 on:
   push:
@@ -90,6 +90,15 @@ jobs:
           name: aarch64-unknown-linux-gnu
           path: crystal/crystal.o
 
+      - name: Build aarch64-unknown-linux-musl object file
+        working-directory: ./crystal
+        run: ./bin/crystal build src/compiler/crystal.cr --cross-compile --target=aarch64-unknown-linux-musl -D without_openssl -D without_zlib --release --verbose
+      - name: Store aarch64-unknown-linux-musl object file
+        uses: actions/upload-artifact@v3
+        with:
+          name: aarch64-unknown-linux-musl
+          path: crystal/crystal.o
+
   aarch64-unknown-linux-gnu:
     strategy:
       fail-fast: false
@@ -119,7 +128,7 @@ jobs:
           context: .
           file: ./Dockerfile.${{ matrix.target }}
           pull: true
-          push: false # github.event_name != 'pull_request'
+          push: false # ${{ github.event_name != 'pull_request' }}
           tags: crow-rest/crystal:${{ matrix.target }},crow-rest/crystal:${{ matrix.target }}-${{ needs.check.outputs.version }}
           platform: linux/arm64
 
