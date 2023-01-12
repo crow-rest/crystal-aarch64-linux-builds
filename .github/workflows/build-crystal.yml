@@ -32,7 +32,7 @@ jobs:
       - name: Install LLVM and Clang
         uses: KyleMayes/install-llvm-action@v1.6.1
         with:
-          force-version: 14.0.6
+          version: 14
       - name: Install crystal
         run: curl -fsSL https://crystal-lang.org/install.sh | sudo bash
       - name: Clone repos
