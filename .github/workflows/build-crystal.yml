@@ -19,12 +19,10 @@ jobs:
           path: |
             crystal
             bdwgc
-            .crystal-latest-tag
-#            .bdwgc-latest-tag
           key: ${{ runner.os }}-crystal-build-${{ secrets.REBUILD }}
-      - name: Make sure file exist
-        run: |
-          touch .crystal-latest-tag
+
+      - name: Get latest built crystal version
+        run: wget https://github.com/crow-rest/crystal-aarch64-linux-builds/releases/download/track/crystal-version
 
 ### TODO: If crystal is latest version (And this is not a pull request) then stop here.
 
@@ -44,9 +42,7 @@ jobs:
 
       - name: Make bdwgc latest tag
         working-directory: ./bdwgc
-        run: |
-          git fetch
-          git checkout $(git describe --tags --abbrev=0)
+        run: git checkout $(git describe --tags --abbrev=0)
       - name: Get bdwgc deps
         working-directory: ./bdwgc
         run: git clone https://github.com/ivmai/libatomic_ops.git 2> /dev/null
@@ -62,10 +58,7 @@ jobs:
 
       - name: Make crystal latest tag
         working-directory: ./crystal
-        run: |
-          git fetch
-          git checkout $(git describe --tags --abbrev=0)
-#          echo "$(git describe --tags --abbrev=0)" > ../.crystal-latest-tag
+        run: git checkout $(git describe --tags --abbrev=0)
       - name: Build crystal
         working-directory: ./crystal
         run: |
@@ -75,9 +68,8 @@ jobs:
       - name: Build aarch64-unknown-linux-gnu object file
         working-directory: ./crystal
         run: ./bin/crystal build src/compiler/crystal.cr --cross-compile --target=aarch64-linux-gnu -D without_openssl -D without_zlib --release
-
-      - name: LS
-        working-directory: ./crystal
-        run: |
-          ls
-          ls build
+      - name: Store aarch64-unknown-linux-gnu object file
+        uses: actions/upload-artifact@v3
+        with:
+          name: aarch64-unknown-linux-gnu
+          path: crystal.o
