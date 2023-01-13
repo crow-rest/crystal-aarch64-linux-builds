@@ -63,7 +63,7 @@ jobs:
         uses: KyleMayes/install-llvm-action@v1.6.1
         with:
           version: 14
-          cache: ${{ steps.cache-llvm.outputs.cache-hit }}
+          cached: ${{ steps.cache-llvm.outputs.cache-hit }}
       - name: Install crystal
         run: curl -fsSL https://crystal-lang.org/install.sh | sudo bash
       - name: Clone repos

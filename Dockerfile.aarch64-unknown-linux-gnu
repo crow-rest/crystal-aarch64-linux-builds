@@ -2,7 +2,7 @@ FROM debian:stable-slim as builder
 
 WORKDIR /build
 
-RUN apt update && apt install -y build-essential lsb-release wget software-properties-common gnupg
+RUN apt update && apt install -y build-essential curl wget lsb-release software-properties-common gnupg
 
 # LLVM 14 required for Crystal
 RUN wget https://apt.llvm.org/llvm.sh && chmod +x llvm.sh && ./llvm.sh 14
@@ -24,7 +24,8 @@ RUN apt update && apt install -y \
       lld \
       llvm \
       llvm-dev\
-      libz-dev
+      libz-dev \
+      libgc-dev
 
 # GC
 RUN git clone https://github.com/ivmai/bdwgc.git
@@ -34,7 +35,7 @@ RUN git clone https://github.com/ivmai/libatomic_ops.git
 RUN autoreconf -vif
 RUN ./configure --enable-static --disable-shared
 RUN make -j
-RUN make check
+RUN make check # TODO: Is this needed???
 RUN make install
 WORKDIR /build
 
@@ -47,19 +48,38 @@ RUN make deps
 # This cmd comes from the build job and is slightly modified.
 COPY crystal.o .
 RUN cc crystal.o -o crystal -rdynamic -L/usr/bin/../lib/crystal ./src/llvm/ext/llvm_ext.o `"/usr/bin/llvm-config-14" --libs --system-libs --ldflags 2> /dev/null` -lstdc++ -lpcre -lm -lgc -lpthread -levent -lrt -lpthread -ldl -lffi
-RUN cp ./.build/crystal /usr/local/bin
+RUN cp crystal /usr/local/bin
+RUN make install
 WORKDIR /build
 
 # Build shards
 RUN git clone https://github.com/crystal-lang/shards.git
 WORKDIR /build/shards
 RUN git checkout $(git describe --tags --abbrev=0)
+RUN git clone --recursive https://github.com/crystal-lang/crystal-molinillo.git lib/molinillo
+RUN cd lib/molinillo && git checkout $(git describe --tags --abbrev=0)
 RUN make release=1
+RUN make install
 
 # Move to img
 FROM debian:stable-slim
 
 RUN apt update && apt install -y \
+    curl \
+    gnupg \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN curl -fsSL https://apt.llvm.org/llvm-snapshot.gpg.key | apt-key add -
+RUN echo "deb http://apt.llvm.org/bullseye/ llvm-toolchain-bullseye-14 main" >> /etc/apt/sources.list
+#RUN add-apt-repository "deb http://apt.llvm.org/bullseye/ llvm-toolchain-bullseye-14 main"
+
+# Needed libs
+RUN apt update && apt install -y \
+    libgc-dev \
+    libevent-dev \
+    llvm-14-dev \
+    libpcre3-dev \
+    clang-14 \
     libssl-dev \
     libxml2-dev \
     libyaml-dev \
@@ -67,12 +87,18 @@ RUN apt update && apt install -y \
     libz-dev \
     && rm -rf /var/lib/apt/lists/*
 
-COPY --from=builder /build/crystal/.build/crystal /usr/local/bin/crystal
-COPY --from=builder /build/shards/.build/shards /usr/local/bin/shards
+ENV cc /usr/bin/clang-14
+RUN ln -s $cc /usr/bin/cc
+
+COPY --from=builder /usr/local/bin/crystal /usr/local/bin/crystal
+COPY --from=builder /usr/local/share/crystal/src /usr/local/share/crystal/src
+COPY --from=builder /usr/local/share/licenses/crystal/LICENSE /usr/local/share/licenses/crystal/LICENSE
+
+COPY --from=builder /usr/local/bin/shards /usr/local/bin/shards
 
 #TODO: chmod +x ??? and optional libs
 
 WORKDIR /app
 
 #ENTRYPOINT [ "mv", "/crystal", "/artifact/crystal" ]
-ENTRYPOINT [ "shards", "run" ]
+ENTRYPOINT [ "shards" ]
