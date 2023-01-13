@@ -1,18 +1,4 @@
-FROM ubuntu:latest as builder
-
-# TODO: Remove
-# Since ubuntu ports is really slow/broken right now use a mirror.
-RUN echo "deb http://mirrors.ocf.berkeley.edu/ubuntu-ports/ jammy main restricted" > /etc/apt/sources.list
-RUN echo "deb http://mirrors.ocf.berkeley.edu/ubuntu-ports/ jammy-updates main restricted" >> /etc/apt/sources.list
-RUN echo "deb http://mirrors.ocf.berkeley.edu/ubuntu-ports/ jammy universe" >> /etc/apt/sources.list
-RUN echo "deb http://mirrors.ocf.berkeley.edu/ubuntu-ports/ jammy-updates universe" >> /etc/apt/sources.list
-RUN echo "deb http://mirrors.ocf.berkeley.edu/ubuntu-ports/ jammy multiverse" >> /etc/apt/sources.list
-RUN echo "deb http://mirrors.ocf.berkeley.edu/ubuntu-ports/ jammy-updates multiverse" >> /etc/apt/sources.list
-RUN echo "deb http://mirrors.ocf.berkeley.edu/ubuntu-ports/ jammy-backports main restricted universe multiverse" >> /etc/apt/sources.list
-RUN echo "deb http://mirrors.ocf.berkeley.edu/ubuntu-ports/ jammy-security main restricted" >> /etc/apt/sources.list
-RUN echo "deb http://mirrors.ocf.berkeley.edu/ubuntu-ports/ jammy-security universe" >> /etc/apt/sources.list
-RUN echo "deb http://mirrors.ocf.berkeley.edu/ubuntu-ports/ jammy-security multiverse" >> /etc/apt/sources.list
-#
+FROM debian:stable-slim as builder
 
 WORKDIR /build
 
@@ -71,7 +57,7 @@ RUN git checkout $(git describe --tags --abbrev=0)
 RUN make release=1
 
 # Move to img
-FROM ubuntu:latest
+FROM debian:stable-slim
 
 RUN apt update && apt install -y \
     libssl-dev \
