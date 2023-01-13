@@ -47,13 +47,31 @@ RUN make deps
 # This cmd comes from the build job and is slightly modified.
 COPY crystal.o .
 RUN cc crystal.o -o crystal -rdynamic -L/usr/bin/../lib/crystal ./src/llvm/ext/llvm_ext.o `"/usr/bin/llvm-config-14" --libs --system-libs --ldflags 2> /dev/null` -lstdc++ -lpcre -lm -lgc -lpthread -levent -lrt -lpthread -ldl -lffi
+RUN cp ./.build/crystal /usr/local/bin
+WORKDIR /build
+
+# Build shards
+RUN git clone https://github.com/crystal-lang/shards.git
+WORKDIR /build/shards
+RUN git checkout $(git describe --tags --abbrev=0)
+RUN make release=1
+
 
 # Move to img
 FROM ubuntu:latest
 
-COPY --from=builder /build/crystal/.build/crystal /usr/local/bin/crystal
+RUN apt update && apt install -y \
+    libssl-dev \
+    libxml2-dev \
+    libyaml-dev \
+    libgmp-dev \
+    libz-dev \
+    && rm -rf /var/lib/apt/lists/*
 
-#TODO: chmod +x ???
+COPY --from=builder /build/crystal/.build/crystal /usr/local/bin/crystal
+COPY --from=builder /build/shards/.build/shards /usr/local/bin/shards
+
+#TODO: chmod +x ??? and optional libs
 
 WORKDIR /app
 
