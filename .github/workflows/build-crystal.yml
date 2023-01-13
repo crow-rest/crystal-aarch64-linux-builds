@@ -51,7 +51,7 @@ jobs:
       - name: Install pkgs
         run: sudo apt update && sudo apt-get install -y libbsd-dev libedit-dev libevent-dev libgmp-dev libgmpxx4ldbl 
           libpcre3-dev libssl-dev libtool libxml2-dev libyaml-dev libz-dev
-      - name: Install LLVM and Clang
+      - name: Install LLVM and Clang # TODO: Allow llvm to be cached!
         uses: KyleMayes/install-llvm-action@v1.6.1
         with:
           version: 14
