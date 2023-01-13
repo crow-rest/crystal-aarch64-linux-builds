@@ -1,5 +1,20 @@
 FROM ubuntu:latest as builder
 
+# TODO: Remove
+# Since ubuntu ports is reallt slow/broken right now use a mirror.
+RUN echo "deb http://mirrors.ocf.berkeley.edu/ubuntu-ports/ jammy main restricted \
+          deb http://mirrors.ocf.berkeley.edu/ubuntu-ports/ jammy-updates main restricted \
+          deb http://mirrors.ocf.berkeley.edu/ubuntu-ports/ jammy universe \
+          deb http://mirrors.ocf.berkeley.edu/ubuntu-ports/ jammy-updates universe \
+          deb http://mirrors.ocf.berkeley.edu/ubuntu-ports/ jammy multiverse \
+          deb http://mirrors.ocf.berkeley.edu/ubuntu-ports/ jammy-updates multiverse \
+          deb http://mirrors.ocf.berkeley.edu/ubuntu-ports/ jammy-backports main restricted universe multiverse \
+          deb http://mirrors.ocf.berkeley.edu/ubuntu-ports/ jammy-security main restricted \
+          deb http://mirrors.ocf.berkeley.edu/ubuntu-ports/ jammy-security universe \
+          deb http://mirrors.ocf.berkeley.edu/ubuntu-ports/ jammy-security multiverse" \
+    > /etc/apt/sources.list
+#
+
 WORKDIR /build
 
 RUN apt update && apt install -y build-essential lsb-release wget software-properties-common gnupg
@@ -55,7 +70,6 @@ RUN git clone https://github.com/crystal-lang/shards.git
 WORKDIR /build/shards
 RUN git checkout $(git describe --tags --abbrev=0)
 RUN make release=1
-
 
 # Move to img
 FROM ubuntu:latest
