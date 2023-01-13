@@ -1,7 +1,7 @@
 FROM ubuntu:latest as builder
 
 # TODO: Remove
-# Since ubuntu ports is reallt slow/broken right now use a mirror.
+# Since ubuntu ports is really slow/broken right now use a mirror.
 RUN echo "deb http://mirrors.ocf.berkeley.edu/ubuntu-ports/ jammy main restricted \
           deb http://mirrors.ocf.berkeley.edu/ubuntu-ports/ jammy-updates main restricted \
           deb http://mirrors.ocf.berkeley.edu/ubuntu-ports/ jammy universe \
