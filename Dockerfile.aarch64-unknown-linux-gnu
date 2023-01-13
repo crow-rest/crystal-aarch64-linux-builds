@@ -76,4 +76,4 @@ COPY --from=builder /build/shards/.build/shards /usr/local/bin/shards
 WORKDIR /app
 
 #ENTRYPOINT [ "mv", "/crystal", "/artifact/crystal" ]
-ENTRYPOINT [ "crystal" ]
+ENTRYPOINT [ "shards", "run" ]
