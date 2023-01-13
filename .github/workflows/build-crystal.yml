@@ -42,6 +42,12 @@ jobs:
             bdwgc
           key: ${{ runner.os }}-crystal-build-${{ needs.check.outputs.version }}-${{ secrets.REBUILD }}
 
+      # TODO: Temp measure
+      - name: apt-spy2
+        run: |
+          sudo gem install apt-spy2
+          sudo apt-spy2 fix --commit
+
       - name: Install pkgs
         run: sudo apt update && sudo apt-get install -y libbsd-dev libedit-dev libevent-dev libgmp-dev libgmpxx4ldbl 
           libpcre3-dev libssl-dev libtool libxml2-dev libyaml-dev libz-dev
@@ -133,7 +139,7 @@ jobs:
           file: ./Dockerfile.${{ matrix.target }}
           pull: true
           push: false # ${{ github.event_name != 'pull_request' }}
-          tags: crow-rest/crystal:${{ matrix.target }},crow-rest/crystal:${{ matrix.target }}-${{ needs.check.outputs.version }},${{ github.sha }} # Base tags on if pull request or not
+          tags: crow-rest/crystal:${{ matrix.target }},crow-rest/crystal:${{ matrix.target }}-${{ needs.check.outputs.version }}
           tag_with_sha: true
           platforms: linux/arm64
 
