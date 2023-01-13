@@ -22,10 +22,13 @@ RUN apt update && apt install -y \
       libxml2-dev \
       libyaml-dev \
       lld \
-      llvm \
-      llvm-dev\
+      llvm-14 \
+      llvm-14-dev\
       libz-dev \
       libgc-dev
+
+ENV cc /usr/bin/clang-14
+RUN ln -sf $cc /usr/bin/cc
 
 # GC
 RUN git clone https://github.com/ivmai/bdwgc.git
@@ -44,7 +47,7 @@ WORKDIR /build/crystal
 RUN git checkout $(git describe --tags --abbrev=0)
 RUN make deps
 
-# Link Crystal
+# Link and Build Crystal
 # This cmd comes from the build github actions job and is slightly modified.
 COPY crystal.o .
 RUN cc crystal.o -o crystal -rdynamic -L/usr/bin/../lib/crystal ./src/llvm/ext/llvm_ext.o `"/usr/bin/llvm-config-14" --libs --system-libs --ldflags 2> /dev/null` -lstdc++ -lpcre -lm -lgc -lpthread -levent -lrt -lpthread -ldl -lffi
@@ -100,4 +103,4 @@ COPY --from=builder /usr/local/bin/shards /usr/local/bin/shards
 
 WORKDIR /app
 
-ENTRYPOINT [ "shards" ]
+CMD [ "shards", "run", "--release" ]
