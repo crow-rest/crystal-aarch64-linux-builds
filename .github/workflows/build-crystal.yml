@@ -35,12 +35,20 @@ jobs:
     if: ${{ needs.check.outputs.should-build }}
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/cache@v3
+      - name: Cache llvm
+        if: cache-llvm
+        uses: actions/cache@v3
+        with:
+          path: |
+            llvm
+          key: ${{ runner.os }}-llvm-14-${{ secrets.REBUILD }} # TODO: Remove rebuild
+      - name: Cache crystal
+        uses: actions/cache@v3
         with:
           path: |
             crystal
             bdwgc
-          key: ${{ runner.os }}-crystal-build-${{ needs.check.outputs.version }}-${{ secrets.REBUILD }}
+          key: ${{ runner.os }}-crystal-build-${{ needs.check.outputs.version }}-${{ secrets.REBUILD }} # TODO: Remove rebuild
 
       # TODO: Temp measure
       - name: apt-spy2
@@ -51,10 +59,11 @@ jobs:
       - name: Install pkgs
         run: sudo apt update && sudo apt-get install -y libbsd-dev libedit-dev libevent-dev libgmp-dev libgmpxx4ldbl 
           libpcre3-dev libssl-dev libtool libxml2-dev libyaml-dev libz-dev
-      - name: Install LLVM and Clang # TODO: Allow llvm to be cached!
+      - name: Install LLVM and Clang
         uses: KyleMayes/install-llvm-action@v1.6.1
         with:
           version: 14
+          cache: ${{ steps.cache-llvm.outputs.cache-hit }}
       - name: Install crystal
         run: curl -fsSL https://crystal-lang.org/install.sh | sudo bash
       - name: Clone repos
