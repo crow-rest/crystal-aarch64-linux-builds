@@ -40,7 +40,7 @@ jobs:
           path: |
             crystal
             bdwgc
-          key: ${{ runner.os }}-crystal-build-${{ env.CRYSTAL_LATEST }}-${{ secrets.REBUILD }}
+          key: ${{ runner.os }}-crystal-build-${{ needs.check.outputs.version }}-${{ secrets.REBUILD }}
 
       - name: Install pkgs
         run: sudo apt update && sudo apt-get install -y libbsd-dev libedit-dev libevent-dev libgmp-dev libgmpxx4ldbl 
