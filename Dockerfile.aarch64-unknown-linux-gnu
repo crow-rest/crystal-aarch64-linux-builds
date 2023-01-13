@@ -35,7 +35,6 @@ RUN git clone https://github.com/ivmai/libatomic_ops.git
 RUN autoreconf -vif
 RUN ./configure --enable-static --disable-shared
 RUN make -j
-RUN make check # TODO: Is this needed??? (This breaks docker build on github actions)
 RUN make install
 WORKDIR /build
 
@@ -65,28 +64,30 @@ RUN FLAGS=--verbose make install release=1
 # Move to img
 FROM debian:stable-slim
 
-RUN apt update && apt install -y \
+RUN apt update && apt upgrade -y && apt install -y \
     curl \
     gnupg \
     && rm -rf /var/lib/apt/lists/*
 
 RUN curl -fsSL https://apt.llvm.org/llvm-snapshot.gpg.key | apt-key add -
 RUN echo "deb http://apt.llvm.org/bullseye/ llvm-toolchain-bullseye-14 main" >> /etc/apt/sources.list
-#RUN add-apt-repository "deb http://apt.llvm.org/bullseye/ llvm-toolchain-bullseye-14 main"
 
-# Needed libs
-RUN apt update && apt install -y \
-    libgc-dev \
-    libevent-dev \
-    llvm-14-dev \
-    libpcre3-dev \
-    clang-14 \
-    libssl-dev \
-    libxml2-dev \
-    libyaml-dev \
-    libgmp-dev \
-    libz-dev \
-    && rm -rf /var/lib/apt/lists/*
+RUN apt update && DEBIAN_FRONTEND=noninteractive apt install -y \
+      tzdata \
+      clang-14 \
+      pkg-config \
+      libssl-dev \
+      libxml2-dev \
+      libyaml-dev \
+      libgmp-dev \
+      git \
+      make \
+      libpcre3-dev \
+      libevent-dev \
+      libz-dev \
+      llvm-14-dev \
+      libgc-dev \
+    && apt clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 ENV cc /usr/bin/clang-14
 RUN ln -s $cc /usr/bin/cc
@@ -97,9 +98,6 @@ COPY --from=builder /usr/local/share/licenses/crystal/LICENSE /usr/local/share/l
 
 COPY --from=builder /usr/local/bin/shards /usr/local/bin/shards
 
-#TODO: chmod +x ??? and optional libs
-
 WORKDIR /app
 
-#ENTRYPOINT [ "mv", "/crystal", "/artifact/crystal" ]
 ENTRYPOINT [ "shards" ]
