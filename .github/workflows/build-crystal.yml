@@ -137,16 +137,14 @@ jobs:
           tag_with_sha: true
           platforms: linux/arm64
       - name: Extract binary
-        run: docker run -it --rm --mount type=bind,source=$(pwd),target=/app crow-rest/crystal:${{ matrix.target }} sh -c "cp /usr/local/bin/crystal /usr/local/bin/shards /app"
+        run: docker run --rm --mount type=bind,source=$(pwd),target=/app crow-rest/crystal:${{ matrix.target }} sh -c "cp /usr/local/bin/crystal /usr/local/bin/shards /app"
       - name: Tar
         run: |
           tar -czvf ${{ matrix.target }}-crystal.tar.gz crystal
-          tar -czvf ${{ matrix.target }}-shards.tar.gz shards
           tar -czvf ${{ matrix.target }}.tar.gz crystal shards
       - name: Hash
         run: |
           sha256sum ${{ matrix.target }}-crystal.tar.gz >> ${{ matrix.target }}-crystal.sha256
-          sha256sum ${{ matrix.target }}-shards.tar.gz >> ${{ matrix.target }}-shards.sha256
           sha256sum ${{ matrix.target }}.tar.gz >> ${{ matrix.target }}.sha256
       - name: Artifact
         uses: actions/upload-artifact@v3
