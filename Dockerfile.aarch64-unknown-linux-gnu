@@ -1,4 +1,4 @@
-FROM debian:stable-slim as builder
+FROM ubuntu:latest as builder
 
 WORKDIR /build
 
@@ -65,7 +65,7 @@ RUN FLAGS=--verbose make release=1
 RUN FLAGS=--verbose make install release=1
 
 # Move to img
-FROM debian:stable-slim
+FROM ubuntu:latest
 
 RUN apt update && apt upgrade -y && apt install -y \
     curl \
