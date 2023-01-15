@@ -131,13 +131,16 @@ jobs:
         with:
           context: .
           file: ./Dockerfile.${{ matrix.target }}
-          pull: true
-          push: ${{ github.event_name != 'pull_request' }}
+          load: true
           tags: crow-rest/crystal:${{ matrix.target }},crow-rest/crystal:${{ matrix.target }}-${{ needs.check.outputs.version }}
-          tag_with_sha: true
           platforms: linux/arm64
       - name: Extract binary
         run: docker run --rm --mount type=bind,source=$(pwd),target=/app crow-rest/crystal:${{ matrix.target }} sh -c "cp /usr/local/bin/crystal /usr/local/bin/shards /app"
+      - name: Push Image
+        if: ${{ github.event_name != 'pull_request' }}
+        run: |
+          docker push crow-rest/crystal:${{ matrix.target }}
+          docker push crow-rest/crystal:${{ matrix.target }}-${{ needs.check.outputs.version }}
       - name: Tar
         run: |
           tar -czvf ${{ matrix.target }}-crystal.tar.gz crystal
