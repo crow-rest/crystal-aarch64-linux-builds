@@ -132,10 +132,10 @@ jobs:
           context: .
           file: ./Dockerfile.${{ matrix.target }}
           load: true
-          tags: crow-rest/crystal:${{ matrix.target }},crow-rest/crystal:${{ matrix.target }}-${{ needs.check.outputs.version }}
+          tags: ghcr.io/crow-rest/crystal:${{ matrix.target }},ghcr.io/crow-rest/crystal:${{ matrix.target }}-${{ needs.check.outputs.version }}
           platforms: linux/arm64
       - name: Extract binary
-        run: docker run --rm --mount type=bind,source=$(pwd),target=/app crow-rest/crystal:${{ matrix.target }} sh -c "cp /usr/local/bin/crystal /usr/local/bin/shards /app"
+        run: docker run --rm --mount type=bind,source=$(pwd),target=/app --pull=never ghcr.io/crow-rest/crystal:${{ matrix.target }} sh -c "cp /usr/local/bin/crystal /usr/local/bin/shards /app"
       - name: Push Image
         if: ${{ github.event_name != 'pull_request' }}
         run: |
