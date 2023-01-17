@@ -139,8 +139,8 @@ jobs:
       - name: Push Image
         if: ${{ github.event_name != 'pull_request' }}
         run: |
-          docker push crow-rest/crystal:${{ matrix.target }}
-          docker push crow-rest/crystal:${{ matrix.target }}-${{ needs.check.outputs.version }}
+          docker push ghcr.io/crow-rest/crystal:${{ matrix.target }}
+          docker push ghcr.io/crow-rest/crystal:${{ matrix.target }}-${{ needs.check.outputs.version }}
       - name: Tar
         run: |
           tar -czvf ${{ matrix.target }}-crystal.tar.gz crystal
