@@ -24,7 +24,7 @@ jobs:
       - name: Set Output
         id: set
         run: |
-          should=${{ (env.CRYSTAL_LATEST != env.CRYSTAL_BUILT_LATEST) || (github.event_name == 'pull_request') }} echo "should=${should^}" >> $GITHUB_OUTPUT
+          echo "should=${{ (env.CRYSTAL_LATEST != env.CRYSTAL_BUILT_LATEST) || (github.event_name == 'pull_request') }}" >> $GITHUB_OUTPUT
           echo "version=${{ env.CRYSTAL_LATEST }}" >> $GITHUB_OUTPUT
       - name: Print
         run: echo ${{ steps.set.outputs.should }}
@@ -32,7 +32,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     needs: [ check ]
-    if: ${{ needs.check.outputs.should-build }}
+    if: false
     steps:
       - uses: actions/checkout@v3
       - name: Cache llvm
