@@ -186,7 +186,7 @@ jobs:
             ${{ matrix.target }}.sha256
       - name: Release Artifact
         if: ${{ github.event_name != 'pull_request' }}
-        uses: svenstaro/upload-release-action@2
+        uses: svenstaro/upload-release-action@2.4.0
         with:
           tag: crystal-${{ needs.check.outputs.version }}
           release_name: crystal-${{ needs.check.outputs.version }}
@@ -203,7 +203,7 @@ jobs:
       - name: Make file
         run: echo ${{ needs.check.outputs.version }} > ./crystal-version
       - name: Set track
-        uses: svenstaro/upload-release-action@2
+        uses: svenstaro/upload-release-action@2.4.0
         with:
           tag: track
           release_name: track
