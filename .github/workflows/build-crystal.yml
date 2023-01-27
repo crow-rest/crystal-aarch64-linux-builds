@@ -1,4 +1,4 @@
-name: Build Crystal for aarch64 targets
+name: Build Crystal
 
 on:
   push:
@@ -53,7 +53,7 @@ jobs:
         run: sudo apt update && sudo apt-get install -y libbsd-dev libedit-dev libevent-dev 
           libgmp-dev libgmpxx4ldbl libpcre3-dev libssl-dev libtool libxml2-dev libyaml-dev libz-dev
       - name: Install LLVM and Clang
-        uses: KyleMayes/install-llvm-action@v1.6.1
+        uses: KyleMayes/install-llvm-action@v1
         with:
           version: 14
           cached: ${{ steps.cache-llvm.outputs.cache-hit }}
@@ -149,20 +149,20 @@ jobs:
         with:
           name: obj-${{ matrix.target }}
       - name: Docker Setup QEMU
-        uses: docker/setup-qemu-action@v2.1.0
+        uses: docker/setup-qemu-action@v2
       - name: Docker Setup Buildx
-        uses: docker/setup-buildx-action@v2.2.1
+        uses: docker/setup-buildx-action@v2
       - name: Docker Login
-        uses: docker/login-action@v2.1.0
+        uses: docker/login-action@v2
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Build and push Docker images
-        uses: docker/build-push-action@v3.2.0
+        uses: docker/build-push-action@v3
         with:
           context: .
-          file: ./Dockerfile.{{ matrix.flag }}
+          file: ./Dockerfile.${{ matrix.flag }}
           load: true
           tags: ghcr.io/crow-rest/crystal:${{ matrix.flag }},ghcr.io/crow-rest/crystal:${{ needs.check.outputs.version }}${{ matrix.flag-tag }}
           platforms: linux/${{ matrix.arch }}
@@ -186,7 +186,7 @@ jobs:
             ${{ matrix.target }}.sha256
       - name: Release Artifact
         if: ${{ github.event_name != 'pull_request' }}
-        uses: svenstaro/upload-release-action@2.4.0
+        uses: svenstaro/upload-release-action@2
         with:
           tag: crystal-${{ needs.check.outputs.version }}
           release_name: crystal-${{ needs.check.outputs.version }}
@@ -203,10 +203,17 @@ jobs:
       - name: Make file
         run: echo ${{ needs.check.outputs.version }} > ./crystal-version
       - name: Set track
-        uses: svenstaro/upload-release-action@2.4.0
+        uses: svenstaro/upload-release-action@2
         with:
           tag: track
           release_name: track
           overwrite: true
           prerelease: true
           file: crystal-version
+      - name: Delete untagged containers
+        uses: duskmoon314/action-delete-ghcr-untagged@v1
+        with:
+          token: ${{ secrets.DELETE_PKGS_TOKEN }}
+          owner_type: org
+          package_name: crystal
+          expiration: 30
