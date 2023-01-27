@@ -102,12 +102,44 @@ jobs:
         with:
           name: obj-aarch64-unknown-linux-musl
           path: crystal/crystal.o
+      - name: Build x86_64-unknown-linux-gnu object file
+        working-directory: ./crystal
+        run: ./bin/crystal build src/compiler/crystal.cr --cross-compile --target=x86_64-unknown-linux-gnu -D without_openssl -D without_zlib --verbose
+      - name: Store x86_64-unknown-linux-gnu object file
+        uses: actions/upload-artifact@v3
+        with:
+          name: obj-x86_64-unknown-linux-gnu
+          path: crystal/crystal.o
+      - name: Build x86_64-unknown-linux-musl object file
+        working-directory: ./crystal
+        run: ./bin/crystal build src/compiler/crystal.cr --cross-compile --target=x86_64-unknown-linux-musl -D without_openssl -D without_zlib --verbose
+      - name: Store x86_64-unknown-linux-musl object file
+        uses: actions/upload-artifact@v3
+        with:
+          name: obj-x86_64-unknown-linux-musl
+          path: crystal/crystal.o
 
   crystal-builds:
     strategy:
       fail-fast: false
       matrix:
-        target: [ aarch64-unknown-linux-gnu, aarch64-unknown-linux-musl ]
+        include:
+          - target: aarch64-unknown-linux-gnu
+            arch: arm64
+            flag: latest
+            flag-tag: ""
+          - target: aarch64-unknown-linux-musl
+            arch: arm64
+            flag: alpine
+            flag-tag: -alpine
+          - target: x86_64-unknown-linux-gnu
+            arch: amd64
+            flag: latest
+            flag-tag: ""
+          - target: x86_64-unknown-linux-gnu
+            arch: amd64
+            flag: alpine
+            flag-tag: -alpine
     runs-on: ubuntu-latest
     needs: [ check, build ]
     steps:
@@ -130,35 +162,27 @@ jobs:
         uses: docker/build-push-action@v3.2.0
         with:
           context: .
-          file: ./Dockerfile.${{ matrix.target }}
+          file: ./Dockerfile.{{ matrix.flag }}
           load: true
-          tags: ghcr.io/crow-rest/crystal:${{ matrix.target }},ghcr.io/crow-rest/crystal:${{ matrix.target }}-${{ needs.check.outputs.version }}
-          platforms: linux/arm64
+          tags: ghcr.io/crow-rest/crystal:${{ matrix.flag }},ghcr.io/crow-rest/crystal:${{ needs.check.outputs.version }}${{ matrix.flag-tag }}
+          platforms: linux/${{ matrix.arch }}
       - name: Extract binary
-        run: docker run --rm --mount type=bind,source=$(pwd),target=/app --pull=never ghcr.io/crow-rest/crystal:${{ matrix.target }} sh -c "cp /usr/local/bin/crystal /usr/local/bin/shards /app"
+        run: docker run --rm --platform=linux/${{ matrix.arch }} --mount type=bind,source=$(pwd),target=/app --pull=never ghcr.io/crow-rest/crystal:${{ matrix.flag }} sh -c "cp /usr/local/bin/crystal /usr/local/bin/shards /app"
       - name: Push Image
         if: ${{ github.event_name != 'pull_request' }}
         run: |
-          docker push ghcr.io/crow-rest/crystal:${{ matrix.target }}
-          docker push ghcr.io/crow-rest/crystal:${{ matrix.target }}-${{ needs.check.outputs.version }}
+          docker push ghcr.io/crow-rest/crystal:${{ matrix.flag }}
+          docker push ghcr.io/crow-rest/crystal:${{ needs.check.outputs.version }}${{ matrix.flag-tag }}
       - name: Tar
-        run: |
-          tar -czvf ${{ matrix.target }}-crystal.tar.gz crystal
-          tar -czvf ${{ matrix.target }}.tar.gz crystal shards
+        run: tar -czvf ${{ matrix.target }}.tar.gz crystal shards
       - name: Hash
-        run: |
-          sha256sum ${{ matrix.target }}-crystal.tar.gz >> ${{ matrix.target }}-crystal.sha256
-          sha256sum ${{ matrix.target }}.tar.gz >> ${{ matrix.target }}.sha256
+        run: sha256sum ${{ matrix.target }}.tar.gz >> ${{ matrix.target }}.sha256
       - name: Artifact
         uses: actions/upload-artifact@v3
         with:
           name: ${{ matrix.target }}
           path: |
-            ${{ matrix.target }}-crystal.tar.gz
-            ${{ matrix.target }}-shards.tar.gz
             ${{ matrix.target }}.tar.gz
-            ${{ matrix.target }}-crystal.sha256
-            ${{ matrix.target }}-shards.sha256
             ${{ matrix.target }}.sha256
       - name: Release Artifact
         if: ${{ github.event_name != 'pull_request' }}
