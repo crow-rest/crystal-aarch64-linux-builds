@@ -154,6 +154,7 @@ jobs:
       - name: Docker Setup QEMU
         uses: docker/setup-qemu-action@v2
       - name: Docker Setup Buildx
+        id: buildx
         uses: docker/setup-buildx-action@v2
       - name: Docker Login
         uses: docker/login-action@v2
@@ -169,6 +170,7 @@ jobs:
           load: true
           tags: ghcr.io/crow-rest/crystal:${{ matrix.flag }},ghcr.io/crow-rest/crystal:${{ needs.check.outputs.version }}${{ matrix.flag-tag }}
           platforms: linux/amd64,linux/arm64
+          builder: ${{ steps.buildx.outputs.name }}
           cache-from: type=local,src=docker-cache
           cache-to: type=local,dest=docker-cache
       - name: Push Image
