@@ -140,6 +140,16 @@ jobs:
     needs: [ check, build ]
     steps:
       - uses: actions/checkout@v3
+      - name: Set dev tags
+        if: ${{ github.event_name == 'pull_request' }}
+        run: |
+          echo "TAG_MODE=edge" >> $GITHUB_ENV
+          echo "DOCKER_TAGS=ghcr.io/crow-rest/crystal:edge${{ matrix.flag-tag }}" >> $GITHUB_ENV
+      - name: Set production tags
+        if: ${{ github.event_name != 'pull_request' }}
+        run: |
+          echo "TAG_MODE=${{ needs.check.outputs.version }}" >> $GITHUB_ENV
+          echo "DOCKER_TAGS=ghcr.io/crow-rest/crystal:${{ matrix.flag }},ghcr.io/crow-rest/crystal:${{ needs.check.outputs.version }}${{ matrix.flag-tag }}" >> $GITHUB_ENV
       - name: Cache edge crystal
         if: ${{ github.event_name == 'pull_request' }}
         uses: actions/cache@v3
@@ -167,30 +177,20 @@ jobs:
         with:
           context: .
           file: ./Dockerfile.${{ matrix.flag }}
-          load: true
-          tags: ghcr.io/crow-rest/crystal:${{ matrix.flag }},ghcr.io/crow-rest/crystal:${{ needs.check.outputs.version }}${{ matrix.flag-tag }}
+          push: true
+          tags: ${{ env.DOCKER_TAGS }}
           platforms: linux/amd64,linux/arm64
           builder: ${{ steps.buildx.outputs.name }}
           cache-from: type=local,src=docker-cache
           cache-to: type=local,dest=docker-cache
-      - name: Push Image
-        if: ${{ github.event_name != 'pull_request' }}
-        run: |
-          docker push ghcr.io/crow-rest/crystal:${{ matrix.flag }}
-          docker push ghcr.io/crow-rest/crystal:${{ needs.check.outputs.version }}${{ matrix.flag-tag }}
-      - name: Push Image edge
-        if: ${{ github.event_name == 'pull_request' }}
-        run: |
-          docker image tag ghcr.io/crow-rest/crystal:${{ needs.check.outputs.version }}${{ matrix.flag-tag }} ghcr.io/crow-rest/crystal:edge${{ matrix.flag-tag }}
-          docker push ghcr.io/crow-rest/crystal:edge${{ matrix.flag-tag }}
       - name: Extract binary arm64
-        run: docker run --rm --platform=linux/arm64 --mount type=bind,source=$(pwd),target=/app --pull=never ghcr.io/crow-rest/crystal:${{ matrix.flag }} sh -c "cp /usr/local/bin/crystal /usr/local/bin/shards /app"
+        run: docker run --rm --platform=linux/arm64 --mount type=bind,source=$(pwd),target=/app --pull=always ghcr.io/crow-rest/crystal:${{ env.TAG_MODE }}${{ matrix.flag-tag }} sh -c "cp /usr/local/bin/crystal /usr/local/bin/shards /app"
       - name: Tar aarch64
         run: tar -czvf aarch64-${{ matrix.target }}.tar.gz crystal shards
       - name: Hash
         run: sha256sum aarch64-${{ matrix.target }}.tar.gz >> aarch64-${{ matrix.target }}.sha256
       - name: Extract binary amd64
-        run: docker run --rm --platform=linux/amd64 --mount type=bind,source=$(pwd),target=/app --pull=never ghcr.io/crow-rest/crystal:${{ matrix.flag }} sh -c "cp /usr/local/bin/crystal /usr/local/bin/shards /app"
+        run: docker run --rm --platform=linux/amd64 --mount type=bind,source=$(pwd),target=/app --pull=always ghcr.io/crow-rest/crystal:${{ env.TAG_MODE }}${{ matrix.flag-tag }} sh -c "cp /usr/local/bin/crystal /usr/local/bin/shards /app"
       - name: Tar x86_64
         run: tar -czvf x86_64-${{ matrix.target }}.tar.gz crystal shards
       - name: Hash
