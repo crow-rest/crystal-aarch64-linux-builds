@@ -1,4 +1,5 @@
 FROM ubuntu:latest as builder
+ARG TARGETARCH
 
 WORKDIR /build
 
@@ -49,7 +50,7 @@ RUN make deps
 
 # Link and Build Crystal
 # This cmd comes from the build github actions job and is slightly modified.
-COPY crystal.o .
+COPY crystal-$TARGETARCH.o crystal.o
 RUN cc crystal.o -o crystal -rdynamic -L/usr/bin/../lib/crystal ./src/llvm/ext/llvm_ext.o `"/usr/bin/llvm-config-14" --libs --system-libs --ldflags 2> /dev/null` -lstdc++ -lpcre -lm -lgc -lpthread -levent -lrt -lpthread -ldl -lffi
 RUN cp crystal /usr/local/bin
 RUN FLAGS=--verbose make install release=1

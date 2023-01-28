@@ -89,55 +89,51 @@ jobs:
       - name: Build aarch64-unknown-linux-gnu object file
         working-directory: ./crystal
         run: ./bin/crystal build src/compiler/crystal.cr --cross-compile --target=aarch64-unknown-linux-gnu -D without_openssl -D without_zlib --verbose
-      - name: Store aarch64-unknown-linux-gnu object file
-        uses: actions/upload-artifact@v3
-        with:
-          name: obj-aarch64-unknown-linux-gnu
-          path: crystal/crystal.o
-      - name: Build aarch64-unknown-linux-musl object file
+      - name: Move aarch64-unknown-linux-gnu object file
         working-directory: ./crystal
-        run: ./bin/crystal build src/compiler/crystal.cr --cross-compile --target=aarch64-unknown-linux-musl -D without_openssl -D without_zlib --verbose
-      - name: Store aarch64-unknown-linux-musl object file
-        uses: actions/upload-artifact@v3
-        with:
-          name: obj-aarch64-unknown-linux-musl
-          path: crystal/crystal.o
+        run: mv crystal.o crystal-arm64.o
       - name: Build x86_64-unknown-linux-gnu object file
         working-directory: ./crystal
         run: ./bin/crystal build src/compiler/crystal.cr --cross-compile --target=x86_64-unknown-linux-gnu -D without_openssl -D without_zlib --verbose
-      - name: Store x86_64-unknown-linux-gnu object file
+      - name: Move x86_64-unknown-linux-gnu object file
+        working-directory: ./crystal
+        run: mv crystal.o crystal-amd64.o
+      - name: Store unknown-linux-gnu object file
         uses: actions/upload-artifact@v3
         with:
-          name: obj-x86_64-unknown-linux-gnu
-          path: crystal/crystal.o
+          name: obj-unknown-linux-gnu
+          path: |
+            crystal/crystal-arm64.o
+            crystal/crystal-amd64.o
+      - name: Build aarch64-unknown-linux-musl object file
+        working-directory: ./crystal
+        run: ./bin/crystal build src/compiler/crystal.cr --cross-compile --target=aarch64-unknown-linux-musl -D without_openssl -D without_zlib --verbose
+      - name: Move aarch64-unknown-linux-musl object file
+        working-directory: ./crystal
+        run: mv crystal.o crystal-arm64.o
       - name: Build x86_64-unknown-linux-musl object file
         working-directory: ./crystal
         run: ./bin/crystal build src/compiler/crystal.cr --cross-compile --target=x86_64-unknown-linux-musl -D without_openssl -D without_zlib --verbose
-      - name: Store x86_64-unknown-linux-musl object file
+      - name: Move x86_64-unknown-linux-musl object file
+        working-directory: ./crystal
+        run: mv crystal.o crystal-amd64.o
+      - name: Store unknown-linux-musl object file
         uses: actions/upload-artifact@v3
         with:
-          name: obj-x86_64-unknown-linux-musl
-          path: crystal/crystal.o
+          name: obj-unknown-linux-musl
+          path: |
+            crystal/crystal-arm64.o
+            crystal/crystal-amd64.o
 
   crystal-builds:
     strategy:
       fail-fast: false
       matrix:
         include:
-          - target: aarch64-unknown-linux-gnu
-            arch: arm64
+          - target: unknown-linux-gnu
             flag: latest
             flag-tag: ""
-          - target: aarch64-unknown-linux-musl
-            arch: arm64
-            flag: alpine
-            flag-tag: -alpine
-          - target: x86_64-unknown-linux-gnu
-            arch: amd64
-            flag: latest
-            flag-tag: ""
-          - target: x86_64-unknown-linux-musl
-            arch: amd64
+          - target: unknown-linux-musl
             flag: alpine
             flag-tag: -alpine
     runs-on: ubuntu-latest
@@ -172,11 +168,9 @@ jobs:
           file: ./Dockerfile.${{ matrix.flag }}
           load: true
           tags: ghcr.io/crow-rest/crystal:${{ matrix.flag }},ghcr.io/crow-rest/crystal:${{ needs.check.outputs.version }}${{ matrix.flag-tag }}
-          platforms: linux/${{ matrix.arch }}
+          platforms: linux/amd64,linux/arm64
           cache-from: type=local,src=docker-cache
           cache-to: type=local,dest=docker-cache
-      - name: Extract binary
-        run: docker run --rm --platform=linux/${{ matrix.arch }} --mount type=bind,source=$(pwd),target=/app --pull=never ghcr.io/crow-rest/crystal:${{ matrix.flag }} sh -c "cp /usr/local/bin/crystal /usr/local/bin/shards /app"
       - name: Push Image
         if: ${{ github.event_name != 'pull_request' }}
         run: |
@@ -187,17 +181,27 @@ jobs:
         run: |
           docker image tag ghcr.io/crow-rest/crystal:${{ needs.check.outputs.version }}${{ matrix.flag-tag }} ghcr.io/crow-rest/crystal:edge${{ matrix.flag-tag }}
           docker push ghcr.io/crow-rest/crystal:edge${{ matrix.flag-tag }}
-      - name: Tar
-        run: tar -czvf ${{ matrix.target }}.tar.gz crystal shards
+      - name: Extract binary arm64
+        run: docker run --rm --platform=linux/arm64 --mount type=bind,source=$(pwd),target=/app --pull=never ghcr.io/crow-rest/crystal:${{ matrix.flag }} sh -c "cp /usr/local/bin/crystal /usr/local/bin/shards /app"
+      - name: Tar aarch64
+        run: tar -czvf aarch64-${{ matrix.target }}.tar.gz crystal shards
       - name: Hash
-        run: sha256sum ${{ matrix.target }}.tar.gz >> ${{ matrix.target }}.sha256
+        run: sha256sum aarch64-${{ matrix.target }}.tar.gz >> aarch64-${{ matrix.target }}.sha256
+      - name: Extract binary amd64
+        run: docker run --rm --platform=linux/amd64 --mount type=bind,source=$(pwd),target=/app --pull=never ghcr.io/crow-rest/crystal:${{ matrix.flag }} sh -c "cp /usr/local/bin/crystal /usr/local/bin/shards /app"
+      - name: Tar x86_64
+        run: tar -czvf x86_64-${{ matrix.target }}.tar.gz crystal shards
+      - name: Hash
+        run: sha256sum x86_64-${{ matrix.target }}.tar.gz >> x86_64-${{ matrix.target }}.sha256
       - name: Artifact
         uses: actions/upload-artifact@v3
         with:
           name: ${{ matrix.target }}
           path: |
-            ${{ matrix.target }}.tar.gz
-            ${{ matrix.target }}.sha256
+            aarch64-${{ matrix.target }}.tar.gz
+            aarch64-${{ matrix.target }}.sha256
+            x86_64-${{ matrix.target }}.tar.gz
+            x86_64-${{ matrix.target }}.sha256
       - name: Release Artifact
         if: ${{ github.event_name != 'pull_request' }}
         uses: svenstaro/upload-release-action@2.4.0
@@ -206,7 +210,7 @@ jobs:
           release_name: crystal-${{ needs.check.outputs.version }}
           overwrite: true
           file_glob: true
-          file: ${{ matrix.target }}*
+          file: "*-${{ matrix.target }}*"
 
   publish:
     runs-on: ubuntu-latest
