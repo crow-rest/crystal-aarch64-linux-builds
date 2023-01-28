@@ -144,6 +144,13 @@ jobs:
     needs: [ check, build ]
     steps:
       - uses: actions/checkout@v3
+      - name: Cache edge crystal
+        if: ${{ github.event_name == 'pull_request' }}
+        uses: actions/cache@v3
+        with:
+          path: |
+            docker-cache
+          key: ${{ runner.os }}-docker-cache-${{ matrix.target }}
       - name: Download crystal.o
         uses: actions/download-artifact@v3
         with:
@@ -166,6 +173,8 @@ jobs:
           load: true
           tags: ghcr.io/crow-rest/crystal:${{ matrix.flag }},ghcr.io/crow-rest/crystal:${{ needs.check.outputs.version }}${{ matrix.flag-tag }}
           platforms: linux/${{ matrix.arch }}
+          cache-from: type=local,src=docker-cache
+          cache-to: type=local,dest=docker-cache
       - name: Extract binary
         run: docker run --rm --platform=linux/${{ matrix.arch }} --mount type=bind,source=$(pwd),target=/app --pull=never ghcr.io/crow-rest/crystal:${{ matrix.flag }} sh -c "cp /usr/local/bin/crystal /usr/local/bin/shards /app"
       - name: Push Image
@@ -173,6 +182,11 @@ jobs:
         run: |
           docker push ghcr.io/crow-rest/crystal:${{ matrix.flag }}
           docker push ghcr.io/crow-rest/crystal:${{ needs.check.outputs.version }}${{ matrix.flag-tag }}
+      - name: Push Image edge
+        if: ${{ github.event_name == 'pull_request' }}
+        run: |
+          docker image tag ghcr.io/crow-rest/crystal:${{ needs.check.outputs.version }}${{ matrix.flag-tag }} ghcr.io/crow-rest/crystal:edge${{ matrix.flag-tag }}
+          docker push ghcr.io/crow-rest/crystal:edge${{ matrix.flag-tag }}
       - name: Tar
         run: tar -czvf ${{ matrix.target }}.tar.gz crystal shards
       - name: Hash
