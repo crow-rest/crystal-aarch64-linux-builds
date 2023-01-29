@@ -100,7 +100,7 @@ jobs:
       - name: Build riscv64gc-unknown-linux-gnu object file
         working-directory: ./crystal
         run: |
-          ./bin/crystal build src/compiler/crystal.cr --cross-compile --target=riscv64gc-unknown-linux-gnu -D without_openssl -D without_zlib --verbose
+          ./bin/crystal build src/compiler/crystal.cr --cross-compile --target=riscv64-unknown-linux-gnu -D without_openssl -D without_zlib --verbose
           mv crystal.o crystal-riscv64.o
       - name: Build s390x-unknown-linux-gnu object file
         working-directory: ./crystal
