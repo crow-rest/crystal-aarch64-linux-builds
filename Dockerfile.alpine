@@ -1,31 +1,31 @@
-FROM ubuntu:latest as builder
+FROM alpine:latest as builder
+ARG TARGETARCH
 
 WORKDIR /build
 
-RUN apt update && apt install -y build-essential curl wget lsb-release software-properties-common gnupg
+RUN apk update && apk add alpine-sdk autoconf libffi-dev clang14
 
-# LLVM 14 required for Crystal
-RUN wget https://apt.llvm.org/llvm.sh && chmod +x llvm.sh && ./llvm.sh 14
-
-# Apt packages for Crystal
-RUN apt update && apt install -y \
+# Apk packages for Crystal
+RUN apk update && apk add \
       automake \
       git \
       libbsd-dev \
       libedit-dev \
       libevent-dev \
-      libgmp-dev \
-      libgmpxx4ldbl \
-      libpcre3-dev \
-      libssl-dev \
+      gmp-dev \
+      pcre-dev \
+      openssl-dev \
       libtool \
       libxml2-dev \
-      libyaml-dev \
+      yaml-dev \
       lld \
-      llvm-14 \
-      llvm-14-dev\
-      libz-dev \
-      libgc-dev
+      llvm14 \
+      llvm14-dev\
+      zlib-dev \
+      gc-dev
+
+# Add llvm path to path
+ENV PATH /usr/lib/llvm14/bin:$PATH
 
 ENV cc /usr/bin/clang-14
 RUN ln -sf $cc /usr/bin/cc
@@ -49,8 +49,8 @@ RUN make deps
 
 # Link and Build Crystal
 # This cmd comes from the build github actions job and is slightly modified.
-COPY crystal.o .
-RUN cc crystal.o -o crystal -rdynamic -L/usr/bin/../lib/crystal ./src/llvm/ext/llvm_ext.o `"/usr/bin/llvm-config-14" --libs --system-libs --ldflags 2> /dev/null` -lstdc++ -lpcre -lm -lgc -lpthread -levent -lrt -lpthread -ldl -lffi
+COPY crystal-$TARGETARCH.o crystal.o
+RUN cc crystal.o -o crystal -rdynamic -L/usr/bin/../lib/crystal ./src/llvm/ext/llvm_ext.o `"/usr/lib/llvm14/bin/llvm-config" --libs --system-libs --ldflags 2> /dev/null` -lstdc++ -lpcre -lm -lgc -lpthread -levent -lrt -lpthread -ldl -lffi
 RUN cp crystal /usr/local/bin
 RUN FLAGS=--verbose make install release=1
 WORKDIR /build
@@ -61,39 +61,32 @@ WORKDIR /build/shards
 RUN git checkout $(git describe --tags --abbrev=0)
 RUN git clone --recursive https://github.com/crystal-lang/crystal-molinillo.git lib/molinillo
 RUN cd lib/molinillo && git checkout $(git describe --tags --abbrev=0)
-RUN FLAGS=--verbose make release=1
+RUN FLAGS=--verbose make bin/shards release=1
 RUN FLAGS=--verbose make install release=1
 
 # Move to img
-FROM ubuntu:latest
+FROM alpine:latest
 
-RUN apt update && apt upgrade -y && apt install -y \
-    curl \
-    gnupg \
-    && rm -rf /var/lib/apt/lists/*
-
-RUN curl -fsSL https://apt.llvm.org/llvm-snapshot.gpg.key | apt-key add -
-RUN echo "deb http://apt.llvm.org/bullseye/ llvm-toolchain-bullseye-14 main" >> /etc/apt/sources.list
-
-RUN apt update && DEBIAN_FRONTEND=noninteractive apt install -y \
+RUN apk add --no-cache \
       tzdata \
-      clang-14 \
-      pkg-config \
-      libssl-dev \
+      gcc \
+      clang14 \
+      binutils \
+      pkgconf \
+      openssl-dev \
       libxml2-dev \
-      libyaml-dev \
-      libgmp-dev \
+      yaml-dev \
+      gmp-dev \
       git \
       make \
-      libpcre3-dev \
+      pcre-dev \
       libevent-dev \
-      libz-dev \
-      llvm-14-dev \
-      libgc-dev \
-    && apt clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+      zlib-dev \
+      gc-dev \
+      libc-dev
 
 ENV cc /usr/bin/clang-14
-RUN ln -s $cc /usr/bin/cc
+RUN ln -sf $cc /usr/bin/cc
 
 COPY --from=builder /usr/local/bin/crystal /usr/local/bin/crystal
 COPY --from=builder /usr/local/share/crystal/src /usr/local/share/crystal/src
