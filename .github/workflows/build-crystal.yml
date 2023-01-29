@@ -7,7 +7,7 @@ on:
     branches: [ main ]
   workflow_dispatch:
   schedule:
-    - cron: '0 1 * * *'
+    - cron: '0 23 * * *'
 
 jobs:
   check:
@@ -98,13 +98,14 @@ jobs:
       - name: Move x86_64-unknown-linux-gnu object file
         working-directory: ./crystal
         run: mv crystal.o crystal-amd64.o
-      - name: Store unknown-linux-gnu object file
+      - name: Store unknown-linux-gnu object files
         uses: actions/upload-artifact@v3
         with:
           name: obj-unknown-linux-gnu
           path: |
             crystal/crystal-arm64.o
             crystal/crystal-amd64.o
+          retention-days: 2
       - name: Build aarch64-unknown-linux-musl object file
         working-directory: ./crystal
         run: ./bin/crystal build src/compiler/crystal.cr --cross-compile --target=aarch64-unknown-linux-musl -D without_openssl -D without_zlib --verbose
@@ -117,13 +118,14 @@ jobs:
       - name: Move x86_64-unknown-linux-musl object file
         working-directory: ./crystal
         run: mv crystal.o crystal-amd64.o
-      - name: Store unknown-linux-musl object file
+      - name: Store unknown-linux-musl object files
         uses: actions/upload-artifact@v3
         with:
           name: obj-unknown-linux-musl
           path: |
             crystal/crystal-arm64.o
             crystal/crystal-amd64.o
+          retention-days: 2
 
   crystal-builds:
     strategy:
@@ -187,13 +189,13 @@ jobs:
         run: docker run --rm --platform=linux/arm64 --mount type=bind,source=$(pwd),target=/app --pull=always ghcr.io/crow-rest/crystal:${{ env.TAG_MODE }}${{ matrix.flag-tag }} sh -c "cp /usr/local/bin/crystal /usr/local/bin/shards /app"
       - name: Tar aarch64
         run: tar -czvf aarch64-${{ matrix.target }}.tar.gz crystal shards
-      - name: Hash
+      - name: Hash aarch64
         run: sha256sum aarch64-${{ matrix.target }}.tar.gz >> aarch64-${{ matrix.target }}.sha256
       - name: Extract binary amd64
         run: docker run --rm --platform=linux/amd64 --mount type=bind,source=$(pwd),target=/app --pull=always ghcr.io/crow-rest/crystal:${{ env.TAG_MODE }}${{ matrix.flag-tag }} sh -c "cp /usr/local/bin/crystal /usr/local/bin/shards /app"
       - name: Tar x86_64
         run: tar -czvf x86_64-${{ matrix.target }}.tar.gz crystal shards
-      - name: Hash
+      - name: Hash x86_64
         run: sha256sum x86_64-${{ matrix.target }}.tar.gz >> x86_64-${{ matrix.target }}.sha256
       - name: Artifact
         uses: actions/upload-artifact@v3
@@ -236,4 +238,4 @@ jobs:
           token: ${{ secrets.DELETE_PKGS_TOKEN }}
           owner_type: org
           package_name: crystal
-          expiration: 30
+          expiration: 7

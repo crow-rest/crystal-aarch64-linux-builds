@@ -61,7 +61,7 @@ WORKDIR /build/shards
 RUN git checkout $(git describe --tags --abbrev=0)
 RUN git clone --recursive https://github.com/crystal-lang/crystal-molinillo.git lib/molinillo
 RUN cd lib/molinillo && git checkout $(git describe --tags --abbrev=0)
-RUN FLAGS=--verbose make release=1
+RUN FLAGS=--verbose make bin/shards release=1
 RUN FLAGS=--verbose make install release=1
 
 # Move to img
