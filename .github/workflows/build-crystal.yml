@@ -89,16 +89,29 @@ jobs:
 #TODO: Move build and mv command to same step.
       - name: Build aarch64-unknown-linux-gnu object file
         working-directory: ./crystal
-        run: ./bin/crystal build src/compiler/crystal.cr --cross-compile --target=aarch64-unknown-linux-gnu -D without_openssl -D without_zlib --verbose
-      - name: Move aarch64-unknown-linux-gnu object file
-        working-directory: ./crystal
-        run: mv crystal.o crystal-arm64.o
+        run: |
+          ./bin/crystal build src/compiler/crystal.cr --cross-compile --target=aarch64-unknown-linux-gnu -D without_openssl -D without_zlib --verbose
+          mv crystal.o crystal-arm64.o
       - name: Build x86_64-unknown-linux-gnu object file
         working-directory: ./crystal
-        run: ./bin/crystal build src/compiler/crystal.cr --cross-compile --target=x86_64-unknown-linux-gnu -D without_openssl -D without_zlib --verbose
-      - name: Move x86_64-unknown-linux-gnu object file
+        run: |
+          ./bin/crystal build src/compiler/crystal.cr --cross-compile --target=x86_64-unknown-linux-gnu -D without_openssl -D without_zlib --verbose
+          mv crystal.o crystal-amd64.o
+      - name: Build riscv64gc-unknown-linux-gnu object file
         working-directory: ./crystal
-        run: mv crystal.o crystal-amd64.o
+        run: |
+          ./bin/crystal build src/compiler/crystal.cr --cross-compile --target=riscv64gc-unknown-linux-gnu -D without_openssl -D without_zlib --verbose
+          mv crystal.o crystal-riscv64.o
+      - name: Build s390x-unknown-linux-gnu object file
+        working-directory: ./crystal
+        run: |
+          ./bin/crystal build src/compiler/crystal.cr --cross-compile --target=s390x-unknown-linux-gnu -D without_openssl -D without_zlib --verbose
+          mv crystal.o crystal-s390x.o
+      - name: Build powerpc64le-unknown-linux-gnu object file
+        working-directory: ./crystal
+        run: |
+          ./bin/crystal build src/compiler/crystal.cr --cross-compile --target=powerpc64le-unknown-linux-gnu -D without_openssl -D without_zlib --verbose
+          mv crystal.o crystal-ppc64le.o
       - name: Store unknown-linux-gnu object files
         uses: actions/upload-artifact@v3
         with:
@@ -106,19 +119,20 @@ jobs:
           path: |
             crystal/crystal-arm64.o
             crystal/crystal-amd64.o
+            crystal/crystal-riscv64.o
+            crystal/crystal-s390x.o
+            crystal/crystal-ppc64le.o
           retention-days: 2
       - name: Build aarch64-unknown-linux-musl object file
         working-directory: ./crystal
-        run: ./bin/crystal build src/compiler/crystal.cr --cross-compile --target=aarch64-unknown-linux-musl -D without_openssl -D without_zlib --verbose
-      - name: Move aarch64-unknown-linux-musl object file
-        working-directory: ./crystal
-        run: mv crystal.o crystal-arm64.o
+        run: |
+          ./bin/crystal build src/compiler/crystal.cr --cross-compile --target=aarch64-unknown-linux-musl -D without_openssl -D without_zlib --verbose
+          mv crystal.o crystal-arm64.o
       - name: Build x86_64-unknown-linux-musl object file
         working-directory: ./crystal
-        run: ./bin/crystal build src/compiler/crystal.cr --cross-compile --target=x86_64-unknown-linux-musl -D without_openssl -D without_zlib --verbose
-      - name: Move x86_64-unknown-linux-musl object file
-        working-directory: ./crystal
-        run: mv crystal.o crystal-amd64.o
+        run: |
+          ./bin/crystal build src/compiler/crystal.cr --cross-compile --target=x86_64-unknown-linux-musl -D without_openssl -D without_zlib --verbose
+          mv crystal.o crystal-amd64.o
       - name: Store unknown-linux-musl object files
         uses: actions/upload-artifact@v3
         with:
@@ -129,6 +143,7 @@ jobs:
           retention-days: 2
 
   crystal-builds:
+    if: false
     strategy:
       fail-fast: false
       matrix:
