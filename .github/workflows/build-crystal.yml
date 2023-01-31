@@ -233,10 +233,3 @@ jobs:
           overwrite: true
           prerelease: true
           file: crystal-version
-      - name: Delete untagged containers
-        uses: duskmoon314/action-delete-ghcr-untagged@v1
-        with:
-          token: ${{ secrets.DELETE_PKGS_TOKEN }}
-          owner_type: org
-          package_name: crystal
-          expiration: 7
